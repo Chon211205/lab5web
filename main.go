@@ -57,20 +57,29 @@ func handleClient(conn net.Conn, db *sql.DB) {
 
 	//POST /next?id=3  (incrementa episodio)
   // POST /update?id=3
-  if method == "POST" && strings.HasPrefix(path, "/update") {
+  partsPath := strings.SplitN(path, "?", 2)
+  route := partsPath[0]
 
-      partsPath := strings.Split(path, "?")
-      if len(partsPath) < 2 {
-          return
+  if method == "POST" && route == "/update" {
+
+      var id string
+
+      if len(partsPath) > 1 {
+          params, _ := url.ParseQuery(partsPath[1])
+          id = params.Get("id")
       }
 
-      queryStr := partsPath[1]
-      q, _ := url.ParseQuery(queryStr)
-      id := q.Get("id")
+      db.Exec(
+          `UPDATE series
+          SET current_episode = current_episode + 1
+          WHERE id = ? AND current_episode < total_episodes`,
+          id,
+      )
 
-      db.Exec("UPDATE series SET current_episode = current_episode + 1 WHERE id = ?", id)
+      response := "HTTP/1.1 200 OK\r\n" +
+          "Content-Type: text/plain\r\n\r\n" +
+          "ok"
 
-      response := "HTTP/1.1 200 OK\r\n\r\n"
       conn.Write([]byte(response))
       return
   }
