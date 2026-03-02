@@ -56,25 +56,24 @@ func handleClient(conn net.Conn, db *sql.DB) {
 	}
 
 	//POST /next?id=3  (incrementa episodio)
-	if method == "POST" && strings.HasPrefix(path, "/next") {
-		// path viene como: /next?id=3
-		partsPath := strings.Split(path, "?")
-		if len(partsPath) < 2 {
-			return
-		}
+  // POST /update?id=3
+  if method == "POST" && strings.HasPrefix(path, "/update") {
 
-		queryStr := partsPath[1]
-		q, _ := url.ParseQuery(queryStr)
-		id := q.Get("id")
+      partsPath := strings.Split(path, "?")
+      if len(partsPath) < 2 {
+          return
+      }
 
-		db.Exec("UPDATE series SET current_episode = current_episode + 1 WHERE id = ?", id)
+      queryStr := partsPath[1]
+      q, _ := url.ParseQuery(queryStr)
+      id := q.Get("id")
 
-		response := "HTTP/1.1 200 OK\r\n" +
-			"Content-Type: text/plain\r\n\r\n" +
-			"OK"
-		conn.Write([]byte(response))
-		return
-	}
+      db.Exec("UPDATE series SET current_episode = current_episode + 1 WHERE id = ?", id)
+
+      response := "HTTP/1.1 200 OK\r\n\r\n"
+      conn.Write([]byte(response))
+      return
+  }
 
 	// GET /
 	if method == "GET" && path == "/" {
@@ -146,14 +145,17 @@ func showHome(conn net.Conn, db *sql.DB) {
 	html += "</table>"
 
 	//llamar POST /next?id=ID y recargar
-	html += `
-<script>
-function nextEpisode(id){
-	fetch("/next?id=" + id, { method: "POST" })
-	.then(() => window.location.reload());
-}
-</script>
-`
+  html += `
+  <script>
+  async function nextEpisode(id) {
+      const url = "/update?id=" + id
+
+      const response = await fetch(url, { method: "POST" })
+
+      location.reload()
+  }
+  </script>
+  `
 
 	html += "</body></html>"
 
