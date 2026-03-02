@@ -55,6 +55,27 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		}
 	}
 
+	//POST /next?id=3  (incrementa episodio)
+	if method == "POST" && strings.HasPrefix(path, "/next") {
+		// path viene como: /next?id=3
+		partsPath := strings.Split(path, "?")
+		if len(partsPath) < 2 {
+			return
+		}
+
+		queryStr := partsPath[1]
+		q, _ := url.ParseQuery(queryStr)
+		id := q.Get("id")
+
+		db.Exec("UPDATE series SET current_episode = current_episode + 1 WHERE id = ?", id)
+
+		response := "HTTP/1.1 200 OK\r\n" +
+			"Content-Type: text/plain\r\n\r\n" +
+			"OK"
+		conn.Write([]byte(response))
+		return
+	}
+
 	// GET /
 	if method == "GET" && path == "/" {
 		showHome(conn, db)
@@ -88,7 +109,7 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		fmt.Println("Episodio actual:", currentEp)
 		fmt.Println("Total episodios:", totalEps)
 
-		//Insertar en la base de datos y redirigir a la pagina principal
+		// Insertar en la base de datos y redirigir a la pagina principal
 		db.Exec(
 			"INSERT INTO series (name, current_episode, total_episodes) VALUES (?, ?, ?)",
 			name, currentEp, totalEps,
@@ -109,7 +130,7 @@ func showHome(conn net.Conn, db *sql.DB) {
 	html += "<h1 align='center'>My Series Tracker</h1>"
 	html += "<div align='center'><a href='/create'>Agregar nueva serie</a></div><br>"
 	html += "<table border='1' align='center'>"
-	html += "<tr><th>Name</th><th>Current</th><th>Total</th></tr>"
+	html += "<tr><th>Name</th><th>Current</th><th>Total</th><th>Action</th></tr>"
 
 	for rows.Next() {
 		var id, current, total int
@@ -117,12 +138,24 @@ func showHome(conn net.Conn, db *sql.DB) {
 		rows.Scan(&id, &name, &current, &total)
 
 		html += fmt.Sprintf(
-			"<tr><td>%s</td><td>%d</td><td>%d</td></tr>",
-			name, current, total,
+			"<tr><td>%s</td><td>%d</td><td>%d</td><td><button onclick='nextEpisode(%d)'>+1</button></td></tr>",
+			name, current, total, id,
 		)
 	}
 
-	html += "</table></body></html>"
+	html += "</table>"
+
+	//llamar POST /next?id=ID y recargar
+	html += `
+<script>
+function nextEpisode(id){
+	fetch("/next?id=" + id, { method: "POST" })
+	.then(() => window.location.reload());
+}
+</script>
+`
+
+	html += "</body></html>"
 
 	response := "HTTP/1.1 200 OK\r\n" +
 		"Content-Type: text/html\r\n\r\n" +
