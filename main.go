@@ -69,33 +69,31 @@ func handleClient(conn net.Conn, db *sql.DB) {
 
 	// POST /create
 	if method == "POST" && path == "/create" {
-		// Leer cuerpo después de \r\n\r\n leyendo EXACTAMENTE Content-Length bytes
+		// Leer cuerpo leyendo content-Length bytes
 		bodyBytes := make([]byte, contentLength)
 		reader.Read(bodyBytes)
 
 		body := string(bodyBytes)
 
-		// Parsear application/x-www-form-urlencoded
+		// Parsear application
 		values, _ := url.ParseQuery(body)
 
-		// Nombres como en tu form actual: name, current, total
+		// Parametros de la tabla
 		name := values.Get("name")
-		current := values.Get("current")
-		total := values.Get("total")
+		currentEp := values.Get("current")
+		totalEps := values.Get("total")
 
-		// ✅ 1.2: por ahora solo imprimir lo que viene
 		fmt.Println("RAW BODY:", body)
 		fmt.Println("Nombre:", name)
-		fmt.Println("Episodio actual:", current)
-		fmt.Println("Total episodios:", total)
+		fmt.Println("Episodio actual:", currentEp)
+		fmt.Println("Total episodios:", totalEps)
 
-		// Tu inserción la dejamos (si quieres solo imprimir, comenta esto)
+		//Insertar en la base de datos y redirigir a la pagina principal
 		db.Exec(
 			"INSERT INTO series (name, current_episode, total_episodes) VALUES (?, ?, ?)",
-			name, current, total,
+			name, currentEp, totalEps,
 		)
 
-		// Redirigir a la pagina principal
 		response := "HTTP/1.1 303 See Other\r\n" +
 			"Location: /\r\n\r\n"
 		conn.Write([]byte(response))
