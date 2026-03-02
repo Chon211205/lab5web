@@ -39,28 +39,29 @@ func handleClient(conn net.Conn, db *sql.DB) {
 	method := parts[0]
 	path := parts[1]
 
-	headers := make(map[string]string)
-
-	// Leer headers
+	// Leer headers + Content-Length como pide la guía
+	contentLength := 0
 	for {
 		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
+
 		if line == "" {
 			break
 		}
-		hParts := strings.SplitN(line, ":", 2)
-		if len(hParts) == 2 {
-			headers[strings.TrimSpace(hParts[0])] = strings.TrimSpace(hParts[1])
+
+		if strings.HasPrefix(line, "Content-Length:") {
+			lengthStr := strings.TrimSpace(strings.TrimPrefix(line, "Content-Length:"))
+			contentLength, _ = strconv.Atoi(lengthStr)
 		}
 	}
 
-	// Get/
+	// GET /
 	if method == "GET" && path == "/" {
 		showHome(conn, db)
 		return
 	}
 
-	// Get/create
+	// GET /create
 	if method == "GET" && path == "/create" {
 		showCreateForm(conn)
 		return
@@ -68,16 +69,27 @@ func handleClient(conn net.Conn, db *sql.DB) {
 
 	// POST /create
 	if method == "POST" && path == "/create" {
-		contentLength, _ := strconv.Atoi(headers["Content-Length"])
+		// Leer cuerpo después de \r\n\r\n leyendo EXACTAMENTE Content-Length bytes
 		bodyBytes := make([]byte, contentLength)
 		reader.Read(bodyBytes)
 
-		values, _ := url.ParseQuery(string(bodyBytes))
+		body := string(bodyBytes)
 
+		// Parsear application/x-www-form-urlencoded
+		values, _ := url.ParseQuery(body)
+
+		// Nombres como en tu form actual: name, current, total
 		name := values.Get("name")
 		current := values.Get("current")
 		total := values.Get("total")
 
+		// ✅ 1.2: por ahora solo imprimir lo que viene
+		fmt.Println("RAW BODY:", body)
+		fmt.Println("Nombre:", name)
+		fmt.Println("Episodio actual:", current)
+		fmt.Println("Total episodios:", total)
+
+		// Tu inserción la dejamos (si quieres solo imprimir, comenta esto)
 		db.Exec(
 			"INSERT INTO series (name, current_episode, total_episodes) VALUES (?, ?, ?)",
 			name, current, total,
