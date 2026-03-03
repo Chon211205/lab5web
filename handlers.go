@@ -39,10 +39,29 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		}
 	}
 
-	// 2.3 — /update usando SplitN y query params
+	// Separar ruta y query (para /update?id=..., etc.)
 	partsPath := strings.SplitN(path, "?", 2)
 	route := partsPath[0]
 
+	// GET /script.js
+	if method == "GET" && route == "/script.js" {
+		showScript(conn)
+		return
+	}
+
+	// GET /
+	if method == "GET" && route == "/" {
+		showHome(conn, db)
+		return
+	}
+
+	// GET /create
+	if method == "GET" && route == "/create" {
+		showCreateForm(conn)
+		return
+	}
+
+	// 2.3 — POST /update?id=...
 	if method == "POST" && route == "/update" {
 		var id string
 		if len(partsPath) > 1 {
@@ -59,20 +78,8 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// GET /
-	if method == "GET" && path == "/" {
-		showHome(conn, db)
-		return
-	}
-
-	// GET /create
-	if method == "GET" && path == "/create" {
-		showCreateForm(conn)
-		return
-	}
-
 	// POST /create
-	if method == "POST" && path == "/create" {
+	if method == "POST" && route == "/create" {
 		bodyBytes := make([]byte, contentLength)
 		reader.Read(bodyBytes)
 		body := string(bodyBytes)

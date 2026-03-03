@@ -29,18 +29,7 @@ func showHome(conn net.Conn, db *sql.DB) {
 
 	html += "</table>"
 
-	// Script EXACTO (pero con async porque usas await)
-	html += `
-<script>
-async function nextEpisode(id) {
-        const url = "/update?id=" + id
-
-        const response = await fetch(url, { method: "POST" })
-
-        location.reload()
-}
-</script>
-`
+	html += `<script src="/script.js"></script>`
 
 	html += "</body></html>"
 
@@ -84,5 +73,20 @@ func showCreateForm(conn net.Conn) {
 	response := "HTTP/1.1 200 OK\r\n" +
 		"Content-Type: text/html\r\n\r\n" +
 		html
+	conn.Write([]byte(response))
+}
+
+func showScript(conn net.Conn) {
+	js := `
+async function nextEpisode(id) {
+    const url = "/update?id=" + id
+    const response = await fetch(url, { method: "POST" })
+    location.reload()
+}
+`
+	response := "HTTP/1.1 200 OK\r\n" +
+		"Content-Type: application/javascript\r\n\r\n" +
+		js
+
 	conn.Write([]byte(response))
 }
