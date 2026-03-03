@@ -43,6 +43,23 @@ func handleClient(conn net.Conn, db *sql.DB) {
 	partsPath := strings.SplitN(path, "?", 2)
 	route := partsPath[0]
 
+	// DELETE /series?id=...
+	if method == "DELETE" && route == "/series" {
+		var id string
+		if len(partsPath) > 1 {
+			params, _ := url.ParseQuery(partsPath[1])
+			id = params.Get("id")
+		}
+
+		deleteSeries(db, id)
+
+		response := "HTTP/1.1 200 OK\r\n" +
+			"Content-Type: text/plain\r\n\r\n" +
+			"ok"
+		conn.Write([]byte(response))
+		return
+	}
+
 	// GET /script.js
 	if method == "GET" && route == "/script.js" {
 		showScript(conn)
@@ -61,7 +78,7 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// 2.3 — POST /update?id=...
+	// POST /update?id=...
 	if method == "POST" && route == "/update" {
 		var id string
 		if len(partsPath) > 1 {
@@ -92,7 +109,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 
 		insertSeries(db, name, currentEp, totalEps)
 
-		// POST/Redirect/GET
 		response := "HTTP/1.1 303 See Other\r\n" +
 			"Location: /\r\n\r\n"
 		conn.Write([]byte(response))

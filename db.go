@@ -17,3 +17,7 @@ func updateNextEpisode(db *sql.DB, id string) {
 		id,
 	)
 }
+
+func deleteSeries(db *sql.DB, id string) {
+	db.Exec("DELETE FROM series WHERE id = ?", id)
+}

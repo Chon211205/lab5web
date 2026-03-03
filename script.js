@@ -5,3 +5,9 @@ async function nextEpisode(id) {
 
     location.reload()
 }
+
+async function deleteSerie(id) {
+  const url = "/series?id=" + id;
+  await fetch(url, { method: "DELETE" });
+  location.reload();
+}

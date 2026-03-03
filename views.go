@@ -14,7 +14,7 @@ func showHome(conn net.Conn, db *sql.DB) {
 	html += "<h1 align='center'>My Series Tracker</h1>"
 	html += "<div align='center'><a href='/create'>Agregar nueva serie</a></div><br>"
 	html += "<table border='1' align='center'>"
-	html += "<tr><th>Name</th><th>Current</th><th>Total</th><th>Progress</th><th>Action</th></tr>"
+	html += "<tr><th>Name</th><th>Current</th><th>Total</th><th>Progress</th><th>Action</th><th>Delete</th></tr>"
 
 	for rows.Next() {
 		var id, current, total int
@@ -26,10 +26,9 @@ func showHome(conn net.Conn, db *sql.DB) {
 			"<td>%s</td>"+
 			"<td>%d</td>"+
 			"<td>%d</td>"+
-			"<td>"+
-			"<progress value='%d' max='%d'></progress> %d%%"+
-			"</td>"+
+			"<td><progress value='%d' max='%d'></progress> %d%%</td>"+
 			"<td><button onclick='nextEpisode(%d)'>+1</button></td>"+
+			"<td><button onclick='deleteSerie(%d)'>Eliminar</button></td>"+
 			"</tr>",
 			name,
 			current,
@@ -37,6 +36,7 @@ func showHome(conn net.Conn, db *sql.DB) {
 			current,
 			total,
 			(current*100)/total,
+			id,
 			id,
 		)
 	}
@@ -94,7 +94,13 @@ func showScript(conn net.Conn) {
 	js := `
 async function nextEpisode(id) {
     const url = "/update?id=" + id
-    const response = await fetch(url, { method: "POST" })
+    await fetch(url, { method: "POST" })
+    location.reload()
+}
+
+async function deleteSerie(id) {
+    const url = "/series?id=" + id
+    await fetch(url, { method: "DELETE" })
     location.reload()
 }
 `
