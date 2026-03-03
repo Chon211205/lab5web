@@ -14,7 +14,7 @@ func showHome(conn net.Conn, db *sql.DB) {
 	html += "<h1 align='center'>My Series Tracker</h1>"
 	html += "<div align='center'><a href='/create'>Agregar nueva serie</a></div><br>"
 	html += "<table border='1' align='center'>"
-	html += "<tr><th>Name</th><th>Current</th><th>Total</th><th>Action</th></tr>"
+	html += "<tr><th>Name</th><th>Current</th><th>Total</th><th>Progress</th><th>Action</th></tr>"
 
 	for rows.Next() {
 		var id, current, total int
@@ -22,8 +22,22 @@ func showHome(conn net.Conn, db *sql.DB) {
 		rows.Scan(&id, &name, &current, &total)
 
 		html += fmt.Sprintf(
-			"<tr><td>%s</td><td>%d</td><td>%d</td><td><button onclick='nextEpisode(%d)'>+1</button></td></tr>",
-			name, current, total, id,
+			"<tr>"+
+			"<td>%s</td>"+
+			"<td>%d</td>"+
+			"<td>%d</td>"+
+			"<td>"+
+			"<progress value='%d' max='%d'></progress> %d%%"+
+			"</td>"+
+			"<td><button onclick='nextEpisode(%d)'>+1</button></td>"+
+			"</tr>",
+			name,
+			current,
+			total,
+			current,
+			total,
+			(current*100)/total,
+			id,
 		)
 	}
 
