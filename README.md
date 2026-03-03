@@ -3,3 +3,4 @@
 - Por implementar una barra de progreso (cuantos episodios vistos vs total)  	15
 - Función para eliminar serie (solo cuenta si usan el método DELETE)	20
 - Implementar un sistema de rating (5 estrellas o 0-10) usando su propia tabla de sqlite	40
+- [Criterio Subjetivo] Estilos y css	10
