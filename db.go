@@ -23,7 +23,6 @@ func deleteSeries(db *sql.DB, id string) {
 }
 
 func setRating(db *sql.DB, seriesID string, rating string) {
-	// Upsert (insertar o actualizar)
 	db.Exec(
 		`INSERT INTO ratings (series_id, rating)
 		 VALUES (?, ?)

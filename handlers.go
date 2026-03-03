@@ -19,7 +19,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// Más robusto que Split(" ")
 	parts := strings.Fields(requestLine)
 	if len(parts) < 2 {
 		return
@@ -29,7 +28,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 	path := strings.TrimSpace(parts[1])
 	path = strings.TrimRight(path, "\r\n")
 
-	// Leer headers + Content-Length
 	contentLength := 0
 	for {
 		line, err := reader.ReadString('\n')
@@ -48,29 +46,24 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		}
 	}
 
-	// Separar ruta y query
 	partsPath := strings.SplitN(path, "?", 2)
 	route := strings.TrimSpace(partsPath[0])
 
-	// GET /script.js
 	if method == "GET" && route == "/script.js" {
 		showScript(conn)
 		return
 	}
 
-	// GET /
 	if method == "GET" && route == "/" {
 		showHome(conn, db)
 		return
 	}
 
-	// GET /create
 	if method == "GET" && route == "/create" {
 		showCreateForm(conn)
 		return
 	}
 
-	// POST /update?id=...
 	if method == "POST" && route == "/update" {
 		var id string
 		if len(partsPath) > 1 {
@@ -87,7 +80,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// DELETE /series?id=...
 	if method == "DELETE" && route == "/series" {
 		var id string
 		if len(partsPath) > 1 {
@@ -104,7 +96,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// POST /create
 	if method == "POST" && route == "/create" {
 		bodyBytes := make([]byte, contentLength)
 		reader.Read(bodyBytes)
@@ -124,7 +115,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// POST /rate?series_id=...&value=...
 	if method == "POST" && route == "/rate" {
 		var seriesID, value string
 		if len(partsPath) > 1 {
@@ -142,7 +132,6 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
-	// ✅ SIEMPRE responder algo (evita ERR_EMPTY_RESPONSE)
 	response := "HTTP/1.1 404 Not Found\r\n" +
 		"Content-Type: text/plain\r\n\r\n" +
 		"not found"
