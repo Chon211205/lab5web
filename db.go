@@ -21,3 +21,13 @@ func updateNextEpisode(db *sql.DB, id string) {
 func deleteSeries(db *sql.DB, id string) {
 	db.Exec("DELETE FROM series WHERE id = ?", id)
 }
+
+func setRating(db *sql.DB, seriesID string, rating string) {
+	// Upsert (insertar o actualizar)
+	db.Exec(
+		`INSERT INTO ratings (series_id, rating)
+		 VALUES (?, ?)
+		 ON CONFLICT(series_id) DO UPDATE SET rating = excluded.rating`,
+		seriesID, rating,
+	)
+}

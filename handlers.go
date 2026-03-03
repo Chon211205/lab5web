@@ -13,22 +13,31 @@ func handleClient(conn net.Conn, db *sql.DB) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
-	requestLine, _ := reader.ReadString('\n')
-	parts := strings.Split(requestLine, " ")
 
+	requestLine, err := reader.ReadString('\n')
+	if err != nil {
+		return
+	}
+
+	// Más robusto que Split(" ")
+	parts := strings.Fields(requestLine)
 	if len(parts) < 2 {
 		return
 	}
 
-	method := parts[0]
-	path := parts[1]
+	method := strings.TrimSpace(parts[0])
+	path := strings.TrimSpace(parts[1])
+	path = strings.TrimRight(path, "\r\n")
 
-	// Leer headers + Content-Length (como tu guía)
+	// Leer headers + Content-Length
 	contentLength := 0
 	for {
-		line, _ := reader.ReadString('\n')
-		line = strings.TrimSpace(line)
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
 
+		line = strings.TrimRight(line, "\r\n")
 		if line == "" {
 			break
 		}
@@ -39,26 +48,9 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		}
 	}
 
-	// Separar ruta y query (para /update?id=..., etc.)
+	// Separar ruta y query
 	partsPath := strings.SplitN(path, "?", 2)
-	route := partsPath[0]
-
-	// DELETE /series?id=...
-	if method == "DELETE" && route == "/series" {
-		var id string
-		if len(partsPath) > 1 {
-			params, _ := url.ParseQuery(partsPath[1])
-			id = params.Get("id")
-		}
-
-		deleteSeries(db, id)
-
-		response := "HTTP/1.1 200 OK\r\n" +
-			"Content-Type: text/plain\r\n\r\n" +
-			"ok"
-		conn.Write([]byte(response))
-		return
-	}
+	route := strings.TrimSpace(partsPath[0])
 
 	// GET /script.js
 	if method == "GET" && route == "/script.js" {
@@ -95,6 +87,23 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		return
 	}
 
+	// DELETE /series?id=...
+	if method == "DELETE" && route == "/series" {
+		var id string
+		if len(partsPath) > 1 {
+			params, _ := url.ParseQuery(partsPath[1])
+			id = params.Get("id")
+		}
+
+		deleteSeries(db, id)
+
+		response := "HTTP/1.1 200 OK\r\n" +
+			"Content-Type: text/plain\r\n\r\n" +
+			"ok"
+		conn.Write([]byte(response))
+		return
+	}
+
 	// POST /create
 	if method == "POST" && route == "/create" {
 		bodyBytes := make([]byte, contentLength)
@@ -114,4 +123,28 @@ func handleClient(conn net.Conn, db *sql.DB) {
 		conn.Write([]byte(response))
 		return
 	}
+
+	// POST /rate?series_id=...&value=...
+	if method == "POST" && route == "/rate" {
+		var seriesID, value string
+		if len(partsPath) > 1 {
+			params, _ := url.ParseQuery(partsPath[1])
+			seriesID = params.Get("series_id")
+			value = params.Get("value")
+		}
+
+		setRating(db, seriesID, value)
+
+		response := "HTTP/1.1 200 OK\r\n" +
+			"Content-Type: text/plain\r\n\r\n" +
+			"ok"
+		conn.Write([]byte(response))
+		return
+	}
+
+	// ✅ SIEMPRE responder algo (evita ERR_EMPTY_RESPONSE)
+	response := "HTTP/1.1 404 Not Found\r\n" +
+		"Content-Type: text/plain\r\n\r\n" +
+		"not found"
+	conn.Write([]byte(response))
 }
